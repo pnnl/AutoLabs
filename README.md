@@ -1,6 +1,6 @@
 
 <p align="center">
-   <img src="images/logo.png" alt="AutoLabs Logo" width="100" />
+   <img src="images/AutoLabs.png" alt="AutoLabs Logo" width="200" />
 </p>
 
 # AutoLabs
