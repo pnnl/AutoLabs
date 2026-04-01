@@ -41,42 +41,6 @@ load_dotenv()
 llm_gp4o = model
 llm_o3_low = model
 llm_o3_medium = model
-# llm_gp4o = AzureChatOpenAI(
-#     model='gpt-4o',
-#     temperature=0.0,
-#     streaming=st.session_state.streaming,
-#     max_tokens=None,
-#     timeout=st.session_state.timeout,
-#     # max_retries=2,
-#     api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-#     api_version="2024-08-01-preview",
-#     azure_endpoint="https://autolabs.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-08-01-preview"
-# )
-
-
-# llm_o3_low = AzureChatOpenAI(
-#     model="o3-mini",
-#     reasoning_effort="low",
-#     streaming=st.session_state.streaming,
-#     max_tokens=None,
-#     timeout=st.session_state.timeout,
-#     api_key=os.getenv("AZURE_OPENAI_API_REASONING_KEY"),
-#     api_version="2024-12-01-preview",
-#     azure_endpoint="https://autolabs-reasoning.openai.azure.com/openai/deployments/o3-mini/chat/completions?api-version=2024-12-01-preview"
-# )
-
-
-# llm_o3_medium = AzureChatOpenAI(
-#     model="o3-mini",
-#     reasoning_effort="medium",
-#     streaming=st.session_state.streaming,
-#     max_tokens=None,
-#     timeout=st.session_state.timeout,
-#     api_key=os.getenv("AZURE_OPENAI_API_REASONING_KEY"),
-#     api_version="2024-12-01-preview",
-#     azure_endpoint="https://autolabs-reasoning.openai.azure.com/openai/deployments/o3-mini/chat/completions?api-version=2024-12-01-preview"
-# )
-
 
 class State(MessagesState):
     next: str
@@ -137,15 +101,6 @@ def supervisor_node_single_agent(state: State) -> Command[Literal["__end__"]]:
             result = do_self_checks_reasoning(messages, assistant_response)
             st.session_state.self_checks_done = True
 
-        # else:
-        #     return Command(
-        #             update={
-        #                 "messages": [
-        #                     AIMessage(content=result, name="supervisor")
-        #                 ]
-        #             },
-        #             goto="__end__",
-        #         )
 
     return Command(
         update={"messages": [AIMessage(content=result, name="supervisor")]},
@@ -155,9 +110,6 @@ def supervisor_node_single_agent(state: State) -> Command[Literal["__end__"]]:
 
 members = [
     "Understand_And_Refine_Experiment",
-    #    "Determine_Chemicals_And_Formats",
-    # "human_node"
-    #   "Determine_Reactions",
     "Calculate_Chemical_Amounts_For_Reactions",
     "Determine_Vial_Organization",
     "Determine_Processing_Steps",
@@ -280,19 +232,6 @@ def self_checks_with_reasoning_node(state: State) -> Command[Literal["__end__"]]
 
     assistant_response = do_self_checks_reasoning(messages, assistant_response)
     st.session_state.self_checks_done = True
-    # modify = True
-    # valid_count = 0
-    # chat_history = messages
-    # while modify and valid_count < 10:
-    #     print('valid count', valid_count)
-    #     modify, reasoning, assistant_response = validate(chat_history, assistant_response)
-    #     # chat_history[-1]['role'] = 'assistant'
-    #     chat_history[-1].type = 'ai'
-    #     chat_history[-1].content = chat_history[-1].content.replace('<final-steps>','').replace('</final-steps>','')
-    #     chat_history.append(AIMessage(reasoning))
-    #     chat_history.append(AIMessage(assistant_response))
-    #     # st.session_state.current_steps = pd.DataFrame(get_exp_steps(assistant_response))
-    #     valid_count += 1
 
     return Command(
         update={
@@ -471,26 +410,16 @@ def reflection_node(
 
     messages = state["messages"]
 
-    # evaluator = create_llm_as_judge(
-    #     prompt=critique_prompt,
-    #     # model="openai:o3-mini",
-    #     judge=llm_reasoning,
-    #     feedback_key="pass",
-    # )
-
-    # resp = llm.with_structured_output(YesNo).invoke(messages+[HumanMessage(critique_prompt)])
     resp = llm_o3_low.with_structured_output(YesNo).invoke(
         [SystemMessage(critique_prompt)]
         + [SystemMessage("The entire chat history is as follows:")]
         + messages
     )
 
-    # eval_result = evaluator(outputs=state["messages"][-1].content, inputs=None)
     eval_result = resp["result"]
     logger.info(f"eval_result: {eval_result}")
 
     if eval_result == "yes" or st.session_state.reflection_count > 1:
-        # if the description is clear or reflection count is greater than 1, no reflections will be done.
         logger.info(
             f"st.session_state.reflection_count: {st.session_state.reflection_count}"
         )
